@@ -2,7 +2,6 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from app.models.user import UserCreate, UserLoginResponse,UserLogin
 from app.db.mongo import db,users,otps
 from app.services.auth_services import verify_password, hash_pasword
-from app.core.limiter import limiter
 import uuid
 from app.models.otp import OTPRequest, OTPVerification
 from app.services.otp_service import send_otp_email,generate_otp
@@ -12,7 +11,6 @@ from app.core.security import create_access_token, get_current_user
 router = APIRouter()
 
 @router.post("/signup", response_model=UserLoginResponse)
-@limiter.limit("5/minute")
 async def signup(request: Request,user: UserCreate):
     # Check if user already exists
     db_user = await db.users.find_one({"username": user.username})
@@ -41,7 +39,6 @@ async def signup(request: Request,user: UserCreate):
 
 
 @router.post("/login", response_model=UserLoginResponse)
-@limiter.limit("5/minute")
 async def login(request: Request,user: UserLogin):
     
     # Check if user already exists

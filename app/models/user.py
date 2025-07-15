@@ -1,4 +1,3 @@
-
 from pydantic import BaseModel, EmailStr, Field, validator
 import re
 from app.db.mongo import users

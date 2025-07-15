@@ -1,19 +1,11 @@
 from fastapi import FastAPI
 from app.routers.auth import router as auth_router
 from fastapi.middleware.cors import CORSMiddleware
-from slowapi import Limiter
-from app.core.limiter import limiter
-from slowapi.util import get_remote_address
-from slowapi.middleware import SlowAPIMiddleware
 from fastapi.responses import PlainTextResponse
 from slowapi.errors import RateLimitExceeded
 
 
 app=FastAPI()
-
-
-app.state.limiter = limiter
-app.add_middleware(SlowAPIMiddleware)
 
 # Allow all origins for testing 
 app.add_middleware(
