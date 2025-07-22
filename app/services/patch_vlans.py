@@ -2,31 +2,49 @@ from fastapi import HTTPException
 import httpx
 import os
 from dotenv import load_dotenv
+from email.utils import formatdate
+from datetime import datetime, timezone
+
 
 load_dotenv()
  
 SONIC_BASE_URL = os.getenv("SONIC_BASE_URL")
 
 RESTCONF_HEADERS = {
-    "Accept": "application/yang-data+json"
+    "Accept": "application/yang-data+json",
+    "Content-Type": "application/yang-data+json",
 }
 
 ETH_INTERFACES = {"Ethernet0", "Ethernet1", "Ethernet2", "Ethernet3" , "Ethernet4" , "Ethernet5" , "Ethernet6"}  # till get_ethernet_interfaces is made 
 
-async def update_vlans(vlan_data: dict):
-    try:
-        validate_vlan_data(vlan_data)
 
+async def update_vlans(vlan_data: dict):
+    
+    validate_vlan_data(vlan_data)
+    try:
         async with httpx.AsyncClient(verify=False, timeout=10.0) as client:
             response = await client.patch(
                 f"{SONIC_BASE_URL}/restconf/data/sonic-vlan:sonic-vlan",
                 headers=RESTCONF_HEADERS,
-                json=vlan_data,  
+                json=vlan_data,
             )
             response.raise_for_status()
-            return response.json()
+
+            
+            if response.text.strip():
+                return response.json()
+            
+            
+            return {
+                "message": "VLAN configuration updated successfully.",
+                "status": response.status_code,
+                "date": formatdate(timeval=None, usegmt=True)
+            }
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
     
 
 def validate_vlan_data(vlan_data: dict):
@@ -40,8 +58,8 @@ def validate_vlan_data(vlan_data: dict):
             name = vlan.get("name")
             mac_learning = vlan.get("mac_learning")
 
-            if mac_learning not in {"enable", "disable"}:
-                raise ValueError(f"Invalid mac_learning '{mac_learning}'. Must be 'enable' or 'disable'.")
+            if mac_learning not in {"enabled", "disabled"}:
+                raise ValueError(f"Invalid mac_learning '{mac_learning}'. Must be 'enabled' or 'disabled'.")
 
             
             if name != f"Vlan{vlanid}":
