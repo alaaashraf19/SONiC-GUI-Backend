@@ -4,8 +4,6 @@ from dotenv import load_dotenv
 import os
 from app.services.sonic_services import fetch_vlans
 
-
-
 router = APIRouter()
 
 RESTCONF_HEADERS = {
@@ -20,6 +18,4 @@ SONIC_BASE_URL = os.getenv("SONIC_BASE_URL")
 
 @router.get("/vlans")
 async def get_vlans():
- return await fetch_vlans()  
-
-
+ return await fetch_vlans()   
