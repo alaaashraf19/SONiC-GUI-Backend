@@ -1,11 +1,25 @@
 from typing import List, Literal, Optional, Union
-from pydantic import BaseModel, Field, model_validator, root_validator
+from pydantic import BaseModel, Field, model_validator
+import re
+
 
 class Vlan(BaseModel):
     name: str
     vlanid: int
     description: Optional[str]
     mac_learning: Literal["enabled", "disabled"]
+
+    @model_validator(mode="after")
+    def check_vlan_name_matches_id(cls, values: "Vlan"):
+        match = re.match(r"Vlan(\d+)", values.name)
+        if not match:
+            raise ValueError(f"Invalid VLAN name format: {values.name}. Expected format: 'Vlan<id>'")
+        
+        name_id = int(match.group(1))
+        if name_id != values.vlanid:
+            raise ValueError(f"VLAN name '{values.name}' does not match vlanid {values.vlanid}")
+        
+        return values
 
 class VLan_memberList(BaseModel):
     name: str
