@@ -1,5 +1,5 @@
 from typing import List, Literal, Optional, Union
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator, root_validator
 
 class Vlan(BaseModel):
     name: str
@@ -22,3 +22,16 @@ class SonicVLANMember(BaseModel):
 class VLan_request(BaseModel):
     vlan: SonicVLAN = Field(..., alias="sonic-vlan:VLAN")
     members: SonicVLANMember = Field(..., alias="sonic-vlan:VLAN_MEMBER")
+
+    @model_validator(mode="after")
+    def validate_vlan_name_match(cls, values: "VLan_request"):
+        vlan_list = values.vlan.VLAN_LIST
+        member_list = values.members.VLAN_MEMBER_LIST
+
+        vlan_names = {v.name for v in vlan_list}
+        member_names = {m.name for m in member_list}
+
+        if vlan_names != member_names:
+            raise ValueError("VLAN names and VLAN_MEMBER names must match exactly.")
+
+        return values
