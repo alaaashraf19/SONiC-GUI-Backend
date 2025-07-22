@@ -26,7 +26,7 @@ class SonicVlanPayload(BaseModel):
     VLAN: VlanData
 
 # Define your endpoint
-@router.put("/vlan", tags=["put_oper"])
+@router.put("/vlan", tags=["vlans"])
 async def update_vlan(payload: dict):
     try:
         result = await put_vlan(payload)

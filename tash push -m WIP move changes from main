@@ -1,0 +1,27 @@
+[33m62aae3e[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mPut-Vlans[m[33m)[m created put endpoint-to be enhanced
+[33m98a0d5d[m added the middleware to link the frontend
+[33mcb327e8[m[33m ([m[1;31morigin/PUT-Vlans[m[33m, [m[1;31morigin/PUT[m[33m)[m Cleaner Version of Vlan endpoint
+[33m0aeeb42[m Merge branch 'main' of https://github.com/alaaashraf19/SONiC-GUI-Backend
+[33m3e75cb0[m - Added `/network/vlans` endpoint in `vlans.py` to fetch VLAN data from SONiC switch - Created `sonic_services.py` to handle RESTCONF requests - Updated `main.py` to include the VLAN router
+[33m795eadc[m added post_operation services & cleaned the code
+[33m461c31a[m added get method for post operations
+[33m7ca4945[m cleaned the code, added .env.example
+[33mbf48bc6[m added requirements.txt
+[33md16629b[m fixed minor issues
+[33m50b5822[m Merge branch 'main' of https://github.com/alaaashraf19/SONiC-GUI-Backend
+[33mce715bd[m bug fixed
+[33m976ec2c[m added get, delete users
+[33m0628fae[m changed dir of api/routers to routers inside it auth.py
+[33me1659f5[m Refactor: moved logic to service layer, simplified routers to endpoints, fixed minor issues
+[33m64c74ee[m Merge branch 'main' of https://github.com/alaaashraf19/SONiC-GUI-Backend
+[33m661a22b[m added otp verification
+[33mb507ec0[m resolved merge conflicts, added admin change role of user
+[33mcde52fc[m Merge branch 'main' of https://github.com/alaaashraf19/SONiC-GUI-Backend
+[33m12a5f1c[m added more restriction on password , username, and email
+[33m8da8937[m add jwt auth
+[33m3347aed[m added log in and sign up
+[33mb8e0133[m removed redundant code
+[33mdef0d40[m Remove __pycache__ folders from tracking
+[33mb517cdf[m add initial app folder
+[33m174cff8[m Update README.md
+[33m953234f[m Initial commit
