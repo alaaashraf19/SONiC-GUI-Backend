@@ -1,7 +1,7 @@
 import os
 from fastapi import APIRouter
 from dotenv import load_dotenv
-from app.services.post_op_services import get_po_service
+from app.services.port_op_services import get_po_service
 
 
 router = APIRouter()
@@ -18,5 +18,5 @@ async def root():
     }
 
 @router.get("/po")
-async def get_post_oper():
+async def get_port_oper():
     return await get_po_service()

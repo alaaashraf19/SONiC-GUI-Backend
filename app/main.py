@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from app.routers.auth import router as auth_router
-from app.routers.post_oper import router as post_oper_router
+from app.routers.port_oper import router as post_oper_router
 from app.routers.vlans import router as vlans_router
 
 app=FastAPI()
