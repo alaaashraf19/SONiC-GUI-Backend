@@ -1,11 +1,14 @@
 import re, os
+
+import httpx
 from app.models.vlan import Vlan_request
 from fastapi import HTTPException
 from typing import List
 from dotenv import load_dotenv
 
 RESTCONF_HEADERS = {
-    "Accept": "application/yang-data+json"
+    "Accept": "application/yang-data+json",
+    "Content-Type": "application/yang-data+json"
 }
 
 
@@ -26,7 +29,6 @@ def extractNumbers_VlanName(name:str):
     
 async def add_vlans(request:Vlan_request):
 
-    # if request.vlan.VLAN_LIST[0].name[0].islower():
 
     vlan_List= request.vlan.VLAN_LIST
     member_List= request.members.VLAN_MEMBER_LIST
@@ -41,5 +43,22 @@ async def add_vlans(request:Vlan_request):
         
         if i.vlanid != extracted_name_vlan_id:
             raise HTTPException(status_code=400, detail="VLAN id does not match id in name")
+    try:
+        async with httpx.AsyncClient(verify=False, timeout = 10.0) as client:
+            response= await client.post( f"{SONIC_BASE_URL}/restconf/data/sonic-vlan:sonic-vlan",
+                                      headers=RESTCONF_HEADERS,
+                                      json=request.model_dump(by_alias=True))
+            response.raise_for_status()
+            return {
+                "status": response.status_code,
+                "message": "VLAN added successfully"
+            }
+
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    # if request.vlan.VLAN_LIST[0].name[0].islower():
+
 
         
