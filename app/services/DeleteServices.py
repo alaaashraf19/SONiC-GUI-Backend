@@ -30,3 +30,25 @@ async def delete_all_vlans_from_switch():
     except httpx.RequestError as exc:
         print(f"[ERROR] Request failed: {exc}")
         raise HTTPException(status_code=500, detail=f"Request failed: {exc}")
+    
+    
+async def delete_vlan_by_name(vlan_name: str):
+    vlan_url = f"{SWITCH_IP}/restconf/data/sonic-vlan:sonic-vlan/VLAN/VLAN_LIST={vlan_name}"
+    try:
+        print(f"[DEBUG] Deleting VLAN '{vlan_name}' at {vlan_url}")
+        async with httpx.AsyncClient(verify=False) as client:
+            response = await client.delete(vlan_url, headers=HEADERS, auth=AUTH, timeout=5.0)
+
+        print(f"[DEBUG] Status: {response.status_code}")
+        print(f"[DEBUG] Response: {response.text}")
+
+        if response.status_code == 204:
+            return {"detail": f"VLAN '{vlan_name}' successfully deleted from the switch."}
+        elif response.status_code == 404:
+            raise HTTPException(status_code=404, detail=f"VLAN '{vlan_name}' not found on the switch.")
+        else:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+
+    except httpx.RequestError as exc:
+        print(f"[ERROR] Request failed: {exc}")
+        raise HTTPException(status_code=500, detail=f"Request failed: {exc}")   
