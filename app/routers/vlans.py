@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from app.services.sonic_services import fetch_vlans
+from app.services.fetch_vlans import fetch_vlans
 from app.services.patch_vlans import update_vlans
 from fastapi import Body
 
