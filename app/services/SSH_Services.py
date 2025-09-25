@@ -76,7 +76,7 @@ async def run_command(conn, command: str):
         else:
             result = result.stderr.strip()
             if not result: # if empty then command succeeded 
-                return f"Command Executed Successfully : {command}"
+                return "Command Executed Successfully"
             else:
                 return result
     except Exception as e:
