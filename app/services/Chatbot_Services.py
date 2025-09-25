@@ -11,6 +11,7 @@ from app.services.SSH_Services import run_command, ssh_sessions
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from collections import deque
+from langchain.agents import initialize_agent, AgentType, Tool
 
 history = deque(maxlen=5) 
 load_dotenv()
@@ -100,9 +101,10 @@ Only the system (outside you) will fill that in.
 Do not write OBSERVATION or FINAL yet.
 if user asks for multiple actions, execute them sequentially, with its own THOUGHT/ACTION/INPUT/OBSERVATION/FINAL
 if multiple actions don't fill the FINAL yet until all actions are done
-You must NEVER invent or write `OBSERVATION:` yourself. 
-OBSERVATION will only be inserted by the system after tools are executed.
-If you include OBSERVATION in your output, it will be ignored.
+
+Never include OBSERVATION or THOUGHT inside the INPUT block. 
+The INPUT must contain only the exact CLI command with no extra text. 
+OBSERVATION will always be filled by the system, not you.
                                         
 Available tools:
 - search_sonic: Search SONiC documentation for relevant info.
@@ -147,6 +149,7 @@ async def invoke_tool(tool_func, tool_input):
         return tool_func(tool_input)
 
 
+
 async def chatbot_service(websocket: WebSocket, username: str):
     await websocket.accept()
     conn = ssh_sessions.get(username)
@@ -160,16 +163,22 @@ async def chatbot_service(websocket: WebSocket, username: str):
     tools = [
         Tool(
             name="execute_command",
-            func=execute_command,
-            description = "Run SONiC CLI commands via SSH. Input should be a valid SONiC CLI command."
-            ),
+            func=execute_command,   
+            # coroutine=execute_command,  # async version
+            description="Run SONiC CLI commands via SSH..."
+        ),
         Tool(
         name="search_sonic",
         func=search_sonic,
         description="Search the SONiC documentation or database for the best matching command when the query is unclear."
         )
     ]
-
+    # agent = initialize_agent(
+    #     tools=tools,
+    #     llm=llm,
+    #     agent=AgentType.CHAT_ZERO_SHOT_REACT_DESCRIPTION,  # handles ACTION/OBSERVATION loops
+    #     verbose=True
+    # )
     tool_map = {t.name: t.func for t in tools}
 
     # async def run_agent(user_input: str, conv_history: str,max_steps: int = 5):
@@ -221,12 +230,15 @@ async def chatbot_service(websocket: WebSocket, username: str):
             response = chain.invoke({"input": context, "conv_history": conv_history})
             print(f"\n=== Step {step+1} ===\n{response}\n")
 
-            actions = re.findall(
-                    r"ACTION:\s*(\w+)\s*INPUT:\s*([^\n\r]+)",
+            if "FINAL:" in response:
+                
+                final_answer = response.split("FINAL:", 1)[1].strip()
+                actions = re.findall(
+                    r"ACTION:\s*(\w+)\s*INPUT:\s*([\s\S]*?)(?=(?:ACTION:|FINAL:|$))",
                     response
                 )
 
-            if actions:
+                if actions:
                     for tool_name, tool_input in actions:
                         tool_name = tool_name.strip()
                         tool_input = tool_input.strip()
@@ -237,44 +249,37 @@ async def chatbot_service(websocket: WebSocket, username: str):
                             context += f"\nACTION: {tool_name}\nINPUT: {tool_input}\nOBSERVATION: {result}"
                         else:
                             context += f"\nOBSERVATION: Unknown tool {tool_name}"
-            response = chain.invoke({"input": context, "conv_history": conv_history})
-            print(f"\n=== Step {step+2} ===\n{response}\n")
-            if "FINAL:" in response:
-               
-                final_answer = response.split("FINAL:", 1)[1].strip()
+                else:
+                    print("⚠️ No ACTION/INPUT blocks found in response")
+
                 return final_answer
-        return "Reached max steps without final answer."
-        #     else:
-        #             print("⚠️ No ACTION/INPUT blocks found in response")
 
-        #         return final_answer
+            elif "ACTION:" in response and "INPUT:" in response:
+                # handle normal single action case
+                actions = re.findall(
+                    r"ACTION:\s*(\w+)\s*INPUT:\s*([\s\S]*?)(?=(?:ACTION:|FINAL:|$))",
+                    response
+                )
 
-        #     elif "ACTION:" in response and "INPUT:" in response:
-        #         # handle normal single action case
-        #         actions = re.findall(
-        #             r"ACTION:\s*(\w+)\s*INPUT:\s*([^\n\r]+)",
-        #             response
-        #         )
+                if actions:
+                    for tool_name, tool_input in actions:
+                        tool_name = tool_name.strip()
+                        tool_input = tool_input.strip()
 
-        #         if actions:
-        #             for tool_name, tool_input in actions:
-        #                 tool_name = tool_name.strip()
-        #                 tool_input = tool_input.strip()
-
-        #                 if tool_name in tool_map:
-        #                     print(f"Invoking tool: {tool_name} with input: {tool_input}")
-        #                     result = await invoke_tool(tool_map[tool_name], tool_input)
-        #                     print("result:" , result)
-        #                     context += f"\nACTION: {tool_name}\nINPUT: {tool_input}\nOBSERVATION: {result}"
-        #                 else:
-        #                     context += f"\nOBSERVATION: Unknown tool {tool_name}"
-        #         else:
-        #             print("⚠️ No ACTION/INPUT blocks found in response")
+                        if tool_name in tool_map:
+                            print(f"Invoking tool: {tool_name} with input: {tool_input}")
+                            result = await invoke_tool(tool_map[tool_name], tool_input)
+                            print("result:" , result)
+                            context += f"\nACTION: {tool_name}\nINPUT: {tool_input}\nOBSERVATION: {result}"
+                        else:
+                            context += f"\nOBSERVATION: Unknown tool {tool_name}"
+                else:
+                    print("⚠️ No ACTION/INPUT blocks found in response")
         
-        #     else:
-        #         return response.strip()
+            else:
+                return response.strip()
 
-        # return "Reached max steps without final answer."
+        return "Reached max steps without final answer."
 
     try:
         while True:
@@ -286,6 +291,7 @@ async def chatbot_service(websocket: WebSocket, username: str):
 
             history.append({"role": "user", "content": clean_input})
             response = await run_agent(clean_input,history)
+            # response = await agent.arun(clean_input)
             history.append({"role": "assistant", "content": response})
             
             await websocket.send_text(response)
