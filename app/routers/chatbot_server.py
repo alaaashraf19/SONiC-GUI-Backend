@@ -5,4 +5,4 @@ router = APIRouter()
 
 @router.websocket("/chat/{username}")
 async def chatbot_server(websocket: WebSocket):
-    return chat_Service(websocket)
+    return await chat_Service(websocket)
