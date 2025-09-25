@@ -104,7 +104,6 @@ if multiple actions don't fill the FINAL yet until all actions are done
 
 Never include OBSERVATION or THOUGHT inside the INPUT block. 
 The INPUT must contain only the exact CLI command with no extra text. 
-OBSERVATION will always be filled by the system, not you.
                                         
 Available tools:
 - search_sonic: Search SONiC documentation for relevant info.
